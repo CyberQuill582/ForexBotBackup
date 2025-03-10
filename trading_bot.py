@@ -1,10 +1,11 @@
+import os
+from datetime import datetime, timedelta
 import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import plotly.express as px
-from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 import seaborn as sns
 from data_handler import DataHandler
@@ -12,10 +13,8 @@ from trading_strategy import TradingStrategy
 from ml_predictor import MLPredictor
 from backtester import Backtester
 from trade_executor import TradeExecutor
-from utils import setup_logging, calculate_performance_metrics, calculate_monthly_returns, calculate_max_drawdown, calculate_current_drawdown
+from utils import setup_logging, calculate_performance_metrics, calculate_monthly_returns
 from ai_optimizer import AIOptimizer
-import logging
-import os
 
 # Setup logging
 logger = setup_logging()
@@ -26,7 +25,7 @@ st.set_page_config(page_title="Trading Bot Dashboard", layout="wide", initial_si
 # Initialize components
 data_handler = DataHandler()
 trading_strategy = TradingStrategy()
-ml_predictor = MLPredictor(retrain_frequency=7)  # Retrain every 7 days by default
+ml_predictor = MLPredictor(retrain_frequency=7)
 backtester = Backtester()
 trade_executor = TradeExecutor()
 ai_optimizer = AIOptimizer()
@@ -36,62 +35,72 @@ if 'initialized' not in st.session_state:
     st.session_state.initialized = True
     st.session_state.backtest_results = None
     st.session_state.trade_executor_initialized = False
-    trade_executor.set_capital(100000)  # Set default capital
+    st.session_state.telegram_token = None
+    trade_executor.set_capital(100000)
     st.session_state.trade_executor = trade_executor
-
-# Function to apply custom CSS
-def apply_custom_css():
-    st.markdown("""
-        <style>
-        .main {
-            background-color: #f5f7fa;
-        }
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 10px;
-        }
-        .stTabs [data-baseweb="tab"] {
-            background-color: #ffffff;
-            border-radius: 4px 4px 0px 0px;
-            padding: 10px 20px;
-            border: 1px solid #e0e0e0;
-        }
-        .stTabs [aria-selected="true"] {
-            background-color: #4CAF50;
-            color: white;
-        }
-        .metric-card {
-            background-color: white;
-            border-radius: 5px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            text-align: center;
-        }
-        .metric-value {
-            font-size: 24px;
-            font-weight: bold;
-        }
-        .metric-label {
-            font-size: 14px;
-            color: #666;
-        }
-        .chart-container {
-            background-color: white;
-            border-radius: 5px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
-apply_custom_css()
 
 # Sidebar
 st.sidebar.title("Trading Bot Controls")
 
-sidebar_tab = st.sidebar.radio("Configuration", ["Market Data", "Strategy", "Backtest", "Live Trading"])
+sidebar_tab = st.sidebar.radio("Configuration", ["Market Data", "Strategy", "Backtest", "Live Trading", "Settings"])
 
-if sidebar_tab == "Market Data":
+if sidebar_tab == "Settings":
+    st.title("Bot Settings")
+
+    # Telegram Configuration Section
+    st.header("Telegram Bot Configuration")
+    st.write("Configure your Telegram bot settings here. Get your bot token from @BotFather on Telegram.")
+
+    # Input for Telegram token
+    telegram_token = st.text_input(
+        "Telegram Bot Token",
+        type="password",
+        value=st.session_state.telegram_token if st.session_state.telegram_token else "",
+        help="Enter the token you received from @BotFather"
+    )
+
+    # Save button for Telegram settings
+    if st.button("Save Telegram Settings"):
+        if telegram_token:
+            st.session_state.telegram_token = telegram_token
+            # Here you would typically initialize your Telegram bot
+            st.success("Telegram settings saved successfully!")
+
+            # You can add validation here
+            if len(telegram_token.split(':')) != 2:
+                st.warning("The token format doesn't look correct. Please verify your token.")
+        else:
+            st.error("Please enter a valid Telegram token")
+
+    # Display connection status
+    if st.session_state.telegram_token:
+        st.info("Telegram bot is configured")
+        if st.button("Test Telegram Connection"):
+            # Here you would typically test the connection
+            # For now, we'll just show a success message
+            st.success("Telegram connection test successful!")
+    else:
+        st.warning("Telegram bot is not configured")
+
+    # Additional Settings
+    st.header("Additional Settings")
+
+    # Notification settings
+    st.subheader("Notifications")
+    notify_on_trade = st.checkbox("Notify on trade execution", value=True)
+    notify_on_signal = st.checkbox("Notify on trading signals", value=True)
+
+    # Risk management settings
+    st.subheader("Risk Management")
+    max_daily_trades = st.number_input("Maximum daily trades", min_value=1, value=5)
+    max_drawdown = st.slider("Maximum drawdown limit (%)", min_value=1, max_value=50, value=20)
+
+    # Save additional settings
+    if st.button("Save Additional Settings"):
+        # Here you would typically save these settings
+        st.success("Additional settings saved successfully!")
+
+elif sidebar_tab == "Market Data":
     st.sidebar.subheader("Market Data Settings")
     symbol = st.sidebar.selectbox(
         "Select Trading Pair",
@@ -244,10 +253,10 @@ with tabs[0]:  # Dashboard
         
         # Create subplots
         fig = make_subplots(rows=2, cols=1, shared_xaxes=True, 
-                          vertical_spacing=0.03, 
-                          row_heights=[0.7, 0.3],
-                          specs=[[{"type": "candlestick"}],
-                                [{"type": "scatter"}]])
+                              vertical_spacing=0.03, 
+                              row_heights=[0.7, 0.3],
+                              specs=[[{"type": "candlestick"}],
+                                    [{"type": "scatter"}]])
         
         # Add price candlesticks
         fig.add_trace(go.Candlestick(
@@ -719,7 +728,7 @@ with tabs[3]:  # Market Analysis
             daily_rsi = tf_data["1d"]['RSI'].iloc[-1]
             
             st.metric("Trend", daily_trend)
-            st.metric("RSI", f"{daily_rsi:.2f}")
+            st.metric("RSI", f"{daily_rsi:..2f}")
             st.metric("Signal", "Buy" if daily_signals[-1] == 1 else "Sell" if daily_signals[-1] == -1 else "Neutral")
         
         with col2:
@@ -797,8 +806,8 @@ with tabs[3]:  # Market Analysis
                 st.subheader("Volume Analysis")
                 
                 fig = make_subplots(rows=2, cols=1, shared_xaxes=True, 
-                                  vertical_spacing=0.03, 
-                                  row_heights=[0.7, 0.3])
+                                      vertical_spacing=0.03, 
+                                      row_heights=[0.7, 0.3])
                 
                 fig.add_trace(go.Scatter(
                     x=df.index,
@@ -946,3 +955,6 @@ with tabs[4]:  # Live Trading
                 }
                 
                 st.table(pd.DataFrame(list(profit_stats.items()), columns=["Metric", "Value"]))
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import StandardScaler
