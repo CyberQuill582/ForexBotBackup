@@ -1,3 +1,4 @@
+
 import os
 import logging
 import pandas as pd
@@ -9,11 +10,20 @@ from typing import Dict, List, Any, Tuple
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Try to import OpenAI, but continue if not available
+try:
+    import openai
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
+    logger.warning("OpenAI package not available, running in fallback mode")
+
 class AIOptimizer:
     def __init__(self):
         """Initialize the AI Optimizer with fallback functionality"""
-        self.enabled = False
-        logger.info("AI Optimizer running in fallback mode (no OpenAI)")
+        self.enabled = OPENAI_AVAILABLE
+        if not self.enabled:
+            logger.info("AI Optimizer running in fallback mode (no OpenAI)")
 
     def analyze_market_conditions(self, df: pd.DataFrame) -> Dict[str, Any]:
         """
