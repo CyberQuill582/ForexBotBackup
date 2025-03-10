@@ -13,7 +13,9 @@ from ml_predictor import MLPredictor
 from backtester import Backtester
 from trade_executor import TradeExecutor
 from utils import setup_logging, calculate_performance_metrics, calculate_monthly_returns, calculate_max_drawdown, calculate_current_drawdown
+from ai_optimizer import AIOptimizer
 import logging
+import os
 
 # Setup logging
 logger = setup_logging()
@@ -27,6 +29,7 @@ trading_strategy = TradingStrategy()
 ml_predictor = MLPredictor(retrain_frequency=7)  # Retrain every 7 days by default
 backtester = Backtester()
 trade_executor = TradeExecutor()
+ai_optimizer = AIOptimizer()
 
 # Session state initialization
 if 'initialized' not in st.session_state:
