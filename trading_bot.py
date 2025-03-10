@@ -24,7 +24,7 @@ st.set_page_config(page_title="Trading Bot Dashboard", layout="wide", initial_si
 # Initialize components
 data_handler = DataHandler()
 trading_strategy = TradingStrategy()
-ml_predictor = MLPredictor()
+ml_predictor = MLPredictor(retrain_frequency=7)  # Retrain every 7 days by default
 backtester = Backtester()
 trade_executor = TradeExecutor()
 
@@ -127,6 +127,9 @@ elif sidebar_tab == "Strategy":
     
     optimize_ml = st.sidebar.checkbox("Optimize ML Hyperparameters", value=False)
     feature_importance = st.sidebar.checkbox("Show Feature Importance", value=True)
+    force_retrain = st.sidebar.checkbox("Force Model Retraining", value=False)
+    retrain_frequency = st.sidebar.slider("Model Retraining Frequency (days)", 0, 30, 7, 
+                                        help="0 means manual retraining only, otherwise retrain every N days")
     
     st.sidebar.text("Signal Combination Settings")
     
@@ -209,7 +212,12 @@ with tabs[0]:  # Dashboard
         signals = trading_strategy.generate_signals(df)
         
         # ML predictions
-        predictions = ml_predictor.predict(df, optimize=optimize_ml if sidebar_tab == "Strategy" else False)
+        if sidebar_tab == "Strategy":
+            # Update retraining frequency
+            ml_predictor.retrain_frequency = retrain_frequency
+            predictions = ml_predictor.predict(df, optimize=optimize_ml, force_retrain=force_retrain)
+        else:
+            predictions = ml_predictor.predict(df)
         
         # Combine signals and predictions
         if sidebar_tab == "Strategy":
@@ -570,6 +578,37 @@ with tabs[2]:  # Strategy Analysis
     st.title("Strategy Analysis")
     
     try:
+        # Display ML Model Information
+        st.subheader("ML Model Information")
+        
+        model_info = {
+            "Last Training Date": ml_predictor.last_train_date.strftime("%Y-%m-%d %H:%M:%S") if ml_predictor.last_train_date else "Never",
+            "Retraining Frequency": f"{ml_predictor.retrain_frequency} days" if ml_predictor.retrain_frequency > 0 else "Manual only",
+            "Model Type": ml_predictor.model.__class__.__name__ if ml_predictor.model else "None"
+        }
+        
+        st.table(pd.DataFrame(list(model_info.items()), columns=["Property", "Value"]))
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Force Model Retraining"):
+                st.session_state['force_retrain'] = True
+                df = data_handler.fetch_market_data(symbol, timeframe, additional_indicators=True)
+                predictions = ml_predictor.predict(df, optimize=True, force_retrain=True)
+                st.success("Model retrained successfully!")
+        
+        with col2:
+            if st.button("Reset Model"):
+                import shutil
+                if os.path.exists(ml_predictor.model_path):
+                    shutil.rmtree(ml_predictor.model_path)
+                    os.makedirs(ml_predictor.model_path)
+                ml_predictor.model = RandomForestClassifier(n_estimators=100, random_state=42)
+                ml_predictor.scaler = StandardScaler()
+                ml_predictor.last_train_date = None
+                ml_predictor.feature_importance = None
+                st.success("Model reset successfully!")
+        
         if 'ml_predictor' in locals() and hasattr(ml_predictor, 'get_feature_importance'):
             feature_imp = ml_predictor.get_feature_importance()
             

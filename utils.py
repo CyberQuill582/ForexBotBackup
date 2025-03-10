@@ -194,3 +194,39 @@ def get_recent_trades(df, signals):
     
     trades_df = pd.DataFrame(trades[-10:])  # Last 10 trades
     return trades_df
+def calculate_monthly_returns(equity_curve):
+    """
+    Calculate monthly returns from equity curve
+    
+    Args:
+        equity_curve: DataFrame with equity values
+        
+    Returns:
+        DataFrame with monthly returns
+    """
+    try:
+        # Make sure we have a DataFrame with datetime index
+        if not isinstance(equity_curve.index, pd.DatetimeIndex):
+            return pd.DataFrame()
+        
+        # Calculate monthly returns
+        monthly_returns = equity_curve['Equity'].resample('M').last().pct_change()
+        
+        # Create a pivot table with years as rows and months as columns
+        monthly_pivot = pd.DataFrame()
+        
+        if len(monthly_returns) > 0:
+            monthly_pivot = pd.DataFrame({
+                'Year': monthly_returns.index.year,
+                'Month': monthly_returns.index.month,
+                'Return': monthly_returns.values * 100  # Convert to percentage
+            })
+            
+            monthly_pivot = monthly_pivot.pivot(index='Year', columns='Month', values='Return')
+            monthly_pivot.columns = [pd.to_datetime(f"2020-{month}-1").strftime('%b') for month in monthly_pivot.columns]
+        
+        return monthly_pivot
+        
+    except Exception as e:
+        logging.error(f"Error calculating monthly returns: {str(e)}")
+        return pd.DataFrame()
