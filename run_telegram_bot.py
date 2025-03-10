@@ -1,6 +1,6 @@
 
-import os
 import logging
+from setup_telegram import setup_telegram_token
 from telegram_bot import main
 
 if __name__ == "__main__":
@@ -11,10 +11,9 @@ if __name__ == "__main__":
     )
     logger = logging.getLogger(__name__)
     
-    # Check for Telegram token
-    if not os.environ.get("TELEGRAM_BOT_TOKEN"):
-        token = input("Please enter your Telegram bot token: ")
-        os.environ["TELEGRAM_BOT_TOKEN"] = token
+    # Setup Telegram token
+    setup_telegram_token()
     
     # Run the bot
+    print("\nStarting Telegram Bot...\n")
     main()
