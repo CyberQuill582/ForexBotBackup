@@ -34,6 +34,14 @@ task = "shell.exec"
 args = "streamlit run trading_bot.py"
 waitForPort = 5000
 
+[[workflows.workflow]]
+name = "Telegram Bot"
+author = 40363250
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python run_telegram_bot.py"
+
 [[ports]]
 localPort = 5000
 externalPort = 80
