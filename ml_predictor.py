@@ -21,11 +21,19 @@ class MLPredictor:
         """
         self.model_path = model_path
         self.retrain_frequency = retrain_frequency
-        self.model = None
-        self.scaler = None
         self.logger = logging.getLogger(__name__)
         self.feature_importance = None
         self.last_train_date = None
+
+        # Initialize model and scaler
+        self.model = RandomForestClassifier(
+            n_estimators=100,
+            max_depth=10,
+            min_samples_split=2,
+            min_samples_leaf=1,
+            random_state=42
+        )
+        self.scaler = StandardScaler()
 
         # Create model directory if it doesn't exist
         if not os.path.exists(model_path):
@@ -100,7 +108,6 @@ class MLPredictor:
             features = features.dropna()
 
             return features
-
         except Exception as e:
             self.logger.error(f"Error preparing features: {str(e)}")
             raise
@@ -144,7 +151,6 @@ class MLPredictor:
             full_predictions[-len(predictions):] = predictions
 
             return full_predictions
-
         except Exception as e:
             self.logger.error(f"Error in ML prediction: {str(e)}")
             return np.zeros(len(df))
@@ -165,8 +171,8 @@ class MLPredictor:
             X_test = features.iloc[train_size:] if train_size < len(features) else features.iloc[train_size:]
             y_test = labels[train_size:] if train_size < len(labels) else []
 
-            # Initialize scaler
-            self.scaler = StandardScaler()
+            # Initialize scaler (already initialized in __init__)
+            #self.scaler = StandardScaler()
             X_train_scaled = self.scaler.fit_transform(X_train)
 
             # Initialize or optimize model
@@ -206,7 +212,6 @@ class MLPredictor:
             self._save_model()
 
             return True
-
         except Exception as e:
             self.logger.error(f"Error training model: {str(e)}")
             return False
@@ -240,7 +245,6 @@ class MLPredictor:
             self.logger.info(f"Best hyperparameters: {grid_search.best_params_}")
 
             return grid_search.best_params_
-
         except Exception as e:
             self.logger.error(f"Error in hyperparameter optimization: {str(e)}")
             return {}
@@ -270,7 +274,6 @@ class MLPredictor:
 
             self.logger.info(f"Model saved to {self.model_path}")
             return True
-
         except Exception as e:
             self.logger.error(f"Error saving model: {str(e)}")
             return False
@@ -284,8 +287,8 @@ class MLPredictor:
 
             if not all(os.path.exists(f) for f in [model_file, scaler_file, metadata_file]):
                 self.logger.info("No existing model found, will train new model")
-                self.model = RandomForestClassifier(n_estimators=100, random_state=42)
-                self.scaler = StandardScaler()
+                #self.model = RandomForestClassifier(n_estimators=100, random_state=42) #Already initialized in __init__
+                #self.scaler = StandardScaler() #Already initialized in __init__
                 return False
 
             # Load model
@@ -306,9 +309,8 @@ class MLPredictor:
             if self.last_train_date:
                 self.logger.info(f"Last training date: {self.last_train_date}")
             return True
-
         except Exception as e:
             self.logger.error(f"Error loading model: {str(e)}")
-            self.model = RandomForestClassifier(n_estimators=100, random_state=42)
-            self.scaler = StandardScaler()
+            #self.model = RandomForestClassifier(n_estimators=100, random_state=42) #Already initialized in __init__
+            #self.scaler = StandardScaler() #Already initialized in __init__
             return False

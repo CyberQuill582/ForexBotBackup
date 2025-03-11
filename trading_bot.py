@@ -728,7 +728,7 @@ with tabs[3]:  # Market Analysis
             daily_rsi = tf_data["1d"]['RSI'].iloc[-1]
             
             st.metric("Trend", daily_trend)
-            st.metric("RSI", f"{daily_rsi:..2f}")
+            st.metric("RSI", f"{daily_rsi:.2f}")
             st.metric("Signal", "Buy" if daily_signals[-1] == 1 else "Sell" if daily_signals[-1] == -1 else "Neutral")
         
         with col2:
@@ -736,11 +736,11 @@ with tabs[3]:  # Market Analysis
             hourly_signals = trading_strategy.generate_signals(tf_data["1h"])
             hourly_trend = "Bullish" if tf_data["1h"]['SMA_20'].iloc[-1] > tf_data["1h"]['SMA_50'].iloc[-1] else "Bearish"
             hourly_rsi = tf_data["1h"]['RSI'].iloc[-1]
-            
+
             st.metric("Trend", hourly_trend)
-            st.metric("RSI", f"{hourly_rsi:.2f}")
+            st.metric("RSI", f"{hourly_rsi:.2f}")  # Fixed format specifier
             st.metric("Signal", "Buy" if hourly_signals[-1] == 1 else "Sell" if hourly_signals[-1] == -1 else "Neutral")
-        
+
         with col3:
             st.write("15-Minute Timeframe")
             minute_signals = trading_strategy.generate_signals(tf_data["15m"])
