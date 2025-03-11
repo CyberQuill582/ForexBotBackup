@@ -124,30 +124,37 @@ elif sidebar_tab == "Market Data":
 
 elif sidebar_tab == "Strategy":
     st.sidebar.subheader("Strategy Settings")
-    
+
     st.sidebar.text("Technical Indicators Settings")
-    
+
     macd_fast = st.sidebar.slider("MACD Fast Period", 8, 20, 12)
     macd_slow = st.sidebar.slider("MACD Slow Period", 21, 30, 26)
     macd_signal = st.sidebar.slider("MACD Signal Period", 5, 15, 9)
-    
+
     rsi_period = st.sidebar.slider("RSI Period", 7, 21, 14)
     rsi_overbought = st.sidebar.slider("RSI Overbought Level", 70, 85, 70)
     rsi_oversold = st.sidebar.slider("RSI Oversold Level", 15, 30, 30)
-    
+
     st.sidebar.text("Machine Learning Settings")
-    
+
+    # Initialize session state for feature importance if not exists
+    if 'show_feature_importance' not in st.session_state:
+        st.session_state.show_feature_importance = True
+
     optimize_ml = st.sidebar.checkbox("Optimize ML Hyperparameters", value=False)
-    feature_importance = st.sidebar.checkbox("Show Feature Importance", value=True)
+    show_feature_importance = st.sidebar.checkbox("Show Feature Importance", value=st.session_state.show_feature_importance)
     force_retrain = st.sidebar.checkbox("Force Model Retraining", value=False)
     retrain_frequency = st.sidebar.slider("Model Retraining Frequency (days)", 0, 30, 7, 
-                                        help="0 means manual retraining only, otherwise retrain every N days")
-    
+                                      help="0 means manual retraining only, otherwise retrain every N days")
+
+    # Update session state
+    st.session_state.show_feature_importance = show_feature_importance
+
     st.sidebar.text("Signal Combination Settings")
-    
+
     tech_weight = st.sidebar.slider("Technical Signals Weight", 0.0, 1.0, 0.6, 0.05)
     ml_weight = 1.0 - tech_weight
-    
+
     trend_filter = st.sidebar.checkbox("Use Trend Filter", value=True)
 
 elif sidebar_tab == "Backtest":
@@ -588,7 +595,7 @@ with tabs[1]:  # Backtest Results
 
 with tabs[2]:  # Strategy Analysis
     st.title("Strategy Analysis")
-    
+
     try:
         # Display ML Model Information
         st.subheader("ML Model Information")
@@ -632,7 +639,7 @@ with tabs[2]:  # Strategy Analysis
                     st.error(f"Error resetting model: {str(e)}")
 
         # Feature importance section
-        if feature_importance and ml_predictor.is_model_trained():
+        if st.session_state.show_feature_importance and ml_predictor.is_model_trained():
             feature_imp = ml_predictor.get_feature_importance()
             if feature_imp is not None and len(feature_imp) > 1:
                 st.subheader("Feature Importance")
