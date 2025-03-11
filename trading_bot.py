@@ -36,6 +36,7 @@ if 'initialized' not in st.session_state:
     st.session_state.backtest_results = None
     st.session_state.trade_executor_initialized = False
     st.session_state.telegram_token = None
+    st.session_state.show_feature_importance = True  # Initialize feature importance flag
     trade_executor.set_capital(100000)
     st.session_state.trade_executor = trade_executor
 
@@ -138,8 +139,7 @@ elif sidebar_tab == "Strategy":
     st.sidebar.text("Machine Learning Settings")
 
     # Initialize session state for feature importance if not exists
-    if 'show_feature_importance' not in st.session_state:
-        st.session_state.show_feature_importance = True
+    #This is already handled in the top-level initialization
 
     optimize_ml = st.sidebar.checkbox("Optimize ML Hyperparameters", value=False)
     show_feature_importance = st.sidebar.checkbox("Show Feature Importance", value=st.session_state.show_feature_importance)
@@ -595,11 +595,11 @@ with tabs[1]:  # Backtest Results
 
 with tabs[2]:  # Strategy Analysis
     st.title("Strategy Analysis")
-
+    
     try:
         # Display ML Model Information
         st.subheader("ML Model Information")
-
+        
         model_status = "Trained" if ml_predictor.is_model_trained() else "Initialized with dummy data"
         model_info = {
             "Model Status": model_status,
@@ -607,9 +607,9 @@ with tabs[2]:  # Strategy Analysis
             "Retraining Frequency": f"{ml_predictor.retrain_frequency} days" if ml_predictor.retrain_frequency > 0 else "Manual only",
             "Model Type": ml_predictor.model.__class__.__name__ if ml_predictor.model else "None"
         }
-
+        
         st.table(pd.DataFrame(list(model_info.items()), columns=["Property", "Value"]))
-
+        
         # Add model control buttons
         col1, col2 = st.columns(2)
         with col1:
@@ -621,7 +621,7 @@ with tabs[2]:  # Strategy Analysis
                         st.success("Model retrained successfully!")
                     else:
                         st.error("Model retraining failed. Check logs for details.")
-
+        
         with col2:
             if st.button("Reset Model"):
                 try:
@@ -637,7 +637,7 @@ with tabs[2]:  # Strategy Analysis
                     st.success("Model reset and initialized with dummy data!")
                 except Exception as e:
                     st.error(f"Error resetting model: {str(e)}")
-
+        
         # Feature importance section
         if st.session_state.show_feature_importance and ml_predictor.is_model_trained():
             feature_imp = ml_predictor.get_feature_importance()
@@ -651,7 +651,7 @@ with tabs[2]:  # Strategy Analysis
                 st.info("Feature importance will be available after the model is trained with real data.")
         elif not ml_predictor.is_model_trained():
             st.warning("Model needs to be trained before feature importance can be displayed.")
-
+        
         # Signal analysis
         st.subheader("Signal Analysis")
         
