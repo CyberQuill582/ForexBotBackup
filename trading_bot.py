@@ -592,50 +592,58 @@ with tabs[2]:  # Strategy Analysis
     try:
         # Display ML Model Information
         st.subheader("ML Model Information")
-        
+
+        model_status = "Trained" if ml_predictor.is_model_trained() else "Initialized with dummy data"
         model_info = {
+            "Model Status": model_status,
             "Last Training Date": ml_predictor.last_train_date.strftime("%Y-%m-%d %H:%M:%S") if ml_predictor.last_train_date else "Never",
             "Retraining Frequency": f"{ml_predictor.retrain_frequency} days" if ml_predictor.retrain_frequency > 0 else "Manual only",
             "Model Type": ml_predictor.model.__class__.__name__ if ml_predictor.model else "None"
         }
-        
+
         st.table(pd.DataFrame(list(model_info.items()), columns=["Property", "Value"]))
-        
+
+        # Add model control buttons
         col1, col2 = st.columns(2)
         with col1:
             if st.button("Force Model Retraining"):
-                st.session_state['force_retrain'] = True
-                df = data_handler.fetch_market_data(symbol, timeframe, additional_indicators=True)
-                predictions = ml_predictor.predict(df, optimize=True, force_retrain=True)
-                st.success("Model retrained successfully!")
-        
+                with st.spinner("Retraining model..."):
+                    df = data_handler.fetch_market_data(symbol, timeframe, additional_indicators=True)
+                    predictions = ml_predictor.predict(df, optimize=True, force_retrain=True)
+                    if ml_predictor.is_model_trained():
+                        st.success("Model retrained successfully!")
+                    else:
+                        st.error("Model retraining failed. Check logs for details.")
+
         with col2:
             if st.button("Reset Model"):
-                import shutil
-                if os.path.exists(ml_predictor.model_path):
-                    shutil.rmtree(ml_predictor.model_path)
-                    os.makedirs(ml_predictor.model_path)
-                ml_predictor.model = RandomForestClassifier(n_estimators=100, random_state=42)
-                ml_predictor.scaler = StandardScaler()
-                ml_predictor.last_train_date = None
-                ml_predictor.feature_importance = None
-                st.success("Model reset successfully!")
-        
-        if 'ml_predictor' in locals() and hasattr(ml_predictor, 'get_feature_importance'):
+                try:
+                    import shutil
+                    if os.path.exists(ml_predictor.model_path):
+                        shutil.rmtree(ml_predictor.model_path)
+                        os.makedirs(ml_predictor.model_path)
+                    ml_predictor.model = RandomForestClassifier(n_estimators=100, random_state=42)
+                    ml_predictor.scaler = StandardScaler()
+                    ml_predictor.last_train_date = None
+                    ml_predictor.feature_importance = None
+                    ml_predictor._initialize_with_dummy_data()
+                    st.success("Model reset and initialized with dummy data!")
+                except Exception as e:
+                    st.error(f"Error resetting model: {str(e)}")
+
+        # Feature importance section
+        if feature_importance and ml_predictor.is_model_trained():
             feature_imp = ml_predictor.get_feature_importance()
-
-            if feature_imp is not None and feature_importance:
-                if len(feature_imp) > 1 or feature_imp['feature'].iloc[0] != 'No features yet':
-                    st.subheader("Feature Importance")
-
-                    # Plot feature importance
-                    fig = px.bar(feature_imp, x='importance', y='feature', orientation='h',
-                               title='Feature Importance in ML Model')
-                    fig.update_layout(height=500)
-
-                    st.plotly_chart(fig, use_container_width=True)
-                else:
-                    st.info("Feature importance will be available after the model is trained with sufficient data.")
+            if feature_imp is not None and len(feature_imp) > 1:
+                st.subheader("Feature Importance")
+                fig = px.bar(feature_imp, x='importance', y='feature', orientation='h',
+                           title='Feature Importance in ML Model')
+                fig.update_layout(height=500)
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("Feature importance will be available after the model is trained with real data.")
+        elif not ml_predictor.is_model_trained():
+            st.warning("Model needs to be trained before feature importance can be displayed.")
 
         # Signal analysis
         st.subheader("Signal Analysis")

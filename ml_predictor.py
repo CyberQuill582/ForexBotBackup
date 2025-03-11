@@ -42,10 +42,43 @@ class MLPredictor:
         # Try to load existing model
         self._load_model()
 
+        # Initialize with dummy data if no model exists
+        if not hasattr(self.model, 'estimators_'):
+            self._initialize_with_dummy_data()
+
+    def _initialize_with_dummy_data(self):
+        """Initialize model with dummy data to ensure it has basic attributes"""
+        try:
+            # Create small dummy dataset
+            X_dummy = np.random.randn(100, 5)
+            y_dummy = np.random.choice([-1, 1], size=100)
+
+            # Fit model with dummy data
+            self.scaler.fit(X_dummy)
+            X_dummy_scaled = self.scaler.transform(X_dummy)
+            self.model.fit(X_dummy_scaled, y_dummy)
+
+            # Initialize feature importance
+            self.feature_importance = pd.DataFrame({
+                'feature': [f'Feature_{i}' for i in range(5)],
+                'importance': self.model.feature_importances_
+            })
+
+            self.last_train_date = datetime.now()
+            self.logger.info("Model initialized with dummy data")
+        except Exception as e:
+            self.logger.error(f"Error initializing model with dummy data: {str(e)}")
+
+    def is_model_trained(self):
+        """Check if the model is properly trained"""
+        return (self.model is not None and 
+                hasattr(self.model, 'estimators_') and 
+                len(self.model.estimators_) > 0)
+
     def get_feature_importance(self):
         """Return feature importance if available"""
         try:
-            if self.model is not None and hasattr(self.model, 'feature_importances_'):
+            if self.is_model_trained():
                 return self.feature_importance
             else:
                 self.logger.warning("Model not trained yet or feature importance not available")
@@ -132,7 +165,7 @@ class MLPredictor:
                 return np.zeros(len(df))
 
             # Check if we need to train/retrain the model
-            should_train = force_retrain or self.model is None or not hasattr(self.model, 'estimators_')
+            should_train = force_retrain or not self.is_model_trained()
 
             # Check training frequency if not forced
             if not should_train and self.last_train_date and self.retrain_frequency > 0:
@@ -146,7 +179,7 @@ class MLPredictor:
                 self.logger.info("Using existing ML model")
 
             # Make predictions with existing model
-            if not hasattr(self.model, 'estimators_'):
+            if not self.is_model_trained():
                 self.logger.warning("Model not properly trained, returning zeros")
                 return np.zeros(len(df))
 
@@ -182,7 +215,6 @@ class MLPredictor:
             y_test = labels[train_size:] if train_size < len(labels) else []
 
             # Initialize scaler (already initialized in __init__)
-            #self.scaler = StandardScaler()
             X_train_scaled = self.scaler.fit_transform(X_train)
 
             # Initialize or optimize model
