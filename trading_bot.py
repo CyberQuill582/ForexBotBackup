@@ -623,17 +623,20 @@ with tabs[2]:  # Strategy Analysis
         
         if 'ml_predictor' in locals() and hasattr(ml_predictor, 'get_feature_importance'):
             feature_imp = ml_predictor.get_feature_importance()
-            
+
             if feature_imp is not None and feature_importance:
-                st.subheader("Feature Importance")
-                
-                # Plot feature importance
-                fig = px.bar(feature_imp, x='importance', y='feature', orientation='h',
-                           title='Feature Importance in ML Model')
-                fig.update_layout(height=500)
-                
-                st.plotly_chart(fig, use_container_width=True)
-        
+                if len(feature_imp) > 1 or feature_imp['feature'].iloc[0] != 'No features yet':
+                    st.subheader("Feature Importance")
+
+                    # Plot feature importance
+                    fig = px.bar(feature_imp, x='importance', y='feature', orientation='h',
+                               title='Feature Importance in ML Model')
+                    fig.update_layout(height=500)
+
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.info("Feature importance will be available after the model is trained with sufficient data.")
+
         # Signal analysis
         st.subheader("Signal Analysis")
         
@@ -736,11 +739,11 @@ with tabs[3]:  # Market Analysis
             hourly_signals = trading_strategy.generate_signals(tf_data["1h"])
             hourly_trend = "Bullish" if tf_data["1h"]['SMA_20'].iloc[-1] > tf_data["1h"]['SMA_50'].iloc[-1] else "Bearish"
             hourly_rsi = tf_data["1h"]['RSI'].iloc[-1]
-
+            
             st.metric("Trend", hourly_trend)
             st.metric("RSI", f"{hourly_rsi:.2f}")  # Fixed format specifier
             st.metric("Signal", "Buy" if hourly_signals[-1] == 1 else "Sell" if hourly_signals[-1] == -1 else "Neutral")
-
+        
         with col3:
             st.write("15-Minute Timeframe")
             minute_signals = trading_strategy.generate_signals(tf_data["15m"])

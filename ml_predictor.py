@@ -44,9 +44,18 @@ class MLPredictor:
 
     def get_feature_importance(self):
         """Return feature importance if available"""
-        if self.model is not None and hasattr(self.model, 'feature_importances_'):
-            return self.feature_importance
-        return None
+        try:
+            if self.model is not None and hasattr(self.model, 'feature_importances_'):
+                return self.feature_importance
+            else:
+                self.logger.warning("Model not trained yet or feature importance not available")
+                return pd.DataFrame({
+                    'feature': ['No features yet'],
+                    'importance': [0.0]
+                })
+        except Exception as e:
+            self.logger.error(f"Error getting feature importance: {str(e)}")
+            return None
 
     def prepare_features(self, df):
         """
@@ -123,7 +132,7 @@ class MLPredictor:
                 return np.zeros(len(df))
 
             # Check if we need to train/retrain the model
-            should_train = force_retrain or self.model is None
+            should_train = force_retrain or self.model is None or not hasattr(self.model, 'estimators_')
 
             # Check training frequency if not forced
             if not should_train and self.last_train_date and self.retrain_frequency > 0:
@@ -137,7 +146,8 @@ class MLPredictor:
                 self.logger.info("Using existing ML model")
 
             # Make predictions with existing model
-            if self.model is None:
+            if not hasattr(self.model, 'estimators_'):
+                self.logger.warning("Model not properly trained, returning zeros")
                 return np.zeros(len(df))
 
             # Scale features for prediction
@@ -287,8 +297,6 @@ class MLPredictor:
 
             if not all(os.path.exists(f) for f in [model_file, scaler_file, metadata_file]):
                 self.logger.info("No existing model found, will train new model")
-                #self.model = RandomForestClassifier(n_estimators=100, random_state=42) #Already initialized in __init__
-                #self.scaler = StandardScaler() #Already initialized in __init__
                 return False
 
             # Load model
@@ -311,6 +319,4 @@ class MLPredictor:
             return True
         except Exception as e:
             self.logger.error(f"Error loading model: {str(e)}")
-            #self.model = RandomForestClassifier(n_estimators=100, random_state=42) #Already initialized in __init__
-            #self.scaler = StandardScaler() #Already initialized in __init__
             return False
