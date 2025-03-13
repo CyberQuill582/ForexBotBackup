@@ -97,8 +97,12 @@ class TradingStrategy:
             # Apply trend filter if enabled
             if self.trend_filter:
                 # Simple trend filter: 50-day SMA direction
-                trend = np.where(df['SMA_50'] > df['SMA_50'].shift(10), 1, 
-                        np.where(df['SMA_50'] < df['SMA_50'].shift(10), -1, 0))
+                # Convert numpy operations to use pandas shift
+                sma50 = df['SMA_50'].values
+                sma50_shifted = df['SMA_50'].shift(10).values
+                
+                trend = np.where(sma50 > sma50_shifted, 1, 
+                        np.where(sma50 < sma50_shifted, -1, 0))
                 
                 # Only allow long signals in uptrend and short signals in downtrend
                 macd_signals = np.where((trend > 0) & (macd_signals > 0), 1, 
