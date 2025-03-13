@@ -147,6 +147,13 @@ class TradingStrategy:
             
             tech_weight, ml_weight = weights
             
+            # Validate array lengths
+            if len(technical_signals) != len(ml_predictions):
+                self.logger.warning(f"Signal arrays have different lengths: technical={len(technical_signals)}, ml={len(ml_predictions)}")
+                min_length = min(len(technical_signals), len(ml_predictions))
+                technical_signals = technical_signals[-min_length:]
+                ml_predictions = ml_predictions[-min_length:]
+            
             # Apply weighted combination
             weighted_signals = technical_signals * tech_weight + ml_predictions * ml_weight
             

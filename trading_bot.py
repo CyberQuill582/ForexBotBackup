@@ -239,10 +239,15 @@ with tabs[0]:  # Dashboard
             predictions = ml_predictor.predict(df)
 
         # Combine signals and predictions
+        # Ensure signals and predictions have the same length
+        min_length = min(len(signals), len(predictions))
+        signals_trimmed = signals[-min_length:]
+        predictions_trimmed = predictions[-min_length:]
+
         if sidebar_tab == "Strategy":
-            final_signal = trading_strategy.combine_signals(signals, predictions, weights=(tech_weight, ml_weight))
+            final_signal = trading_strategy.combine_signals(signals_trimmed, predictions_trimmed, weights=(tech_weight, ml_weight))
         else:
-            final_signal = trading_strategy.combine_signals(signals, predictions)
+            final_signal = trading_strategy.combine_signals(signals_trimmed, predictions_trimmed)
 
         # Performance metrics
         metrics = calculate_performance_metrics(df, final_signal)
@@ -744,8 +749,7 @@ with tabs[3]:  # Market Analysis
         col1, col2, col3 = st.columns(3)
 
         with col1:
-            st.write("Daily Timeframe")
-            daily_signals = trading_strategy.generate_signals(tf_data["1d"])
+            st.write("Daily Timeframe")            daily_signals = trading_strategy.generate_signals(tf_data["1d"])
             daily_trend = "Bullish" if tf_data["1d"]['SMA_20'].iloc[-1] > tf_data["1d"]['SMA_50'].iloc[-1] else "Bearish"
             daily_rsi = tf_data["1d"]['RSI'].iloc[-1]
 
