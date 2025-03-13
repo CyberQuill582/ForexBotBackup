@@ -699,9 +699,12 @@ with tabs[2]:  # Strategy Analysis
                                  np.where(df['SMA_20'] < df['SMA_20'].shift(20), 'Downtrend', 'Sideways'))
             
             # Calculate returns by market condition
+            # Convert final_signal numpy array to pandas Series with the same index as df
+            final_signal_series = pd.Series(final_signal, index=df.index)
+            
             returns_by_condition = pd.DataFrame({
                 'Market_Condition': df['Trend'],
-                'Strategy_Return': df['Close'].pct_change() * final_signal.shift(1)
+                'Strategy_Return': df['Close'].pct_change() * final_signal_series.shift(1)
             }).dropna()
             
             condition_returns = returns_by_condition.groupby('Market_Condition').agg({
