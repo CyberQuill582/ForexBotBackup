@@ -12,7 +12,7 @@ class Backtester:
         self.trading_strategy = TradingStrategy()
         self.ml_predictor = MLPredictor()
 
-    def run_backtest(self, df, initial_capital=10000.0, position_size=0.1, start_date = None): #Added start_date parameter
+    def run_backtest(self, df, initial_capital=10000.0, position_size=0.1, start_date=None):
         """
         Run a backtest on historical data
 
@@ -26,6 +26,29 @@ class Backtester:
             Dictionary with backtest results
         """
         try:
+            # Filter data by start_date if provided
+            if start_date is not None:
+                # Make sure both the DataFrame index and start_date have the same timezone info
+                if hasattr(df.index, 'tz') and df.index.tz is not None:
+                    if hasattr(start_date, 'tzinfo') and start_date.tzinfo is not None:
+                        # Both have timezones, convert start_date to match df.index timezone
+                        import pytz
+                        start_date = start_date.astimezone(df.index.tz)
+                    else:
+                        # start_date has no timezone, localize it to match df.index timezone
+                        import pytz
+                        start_date = pytz.timezone(str(df.index.tz)).localize(start_date)
+                else:
+                    # DataFrame index has no timezone, make start_date naive if it has timezone
+                    if hasattr(start_date, 'tzinfo') and start_date.tzinfo is not None:
+                        start_date = start_date.replace(tzinfo=None)
+                
+                # Now filter the DataFrame
+                df = df[df.index >= start_date]
+                
+                if df.empty:
+                    raise ValueError(f"No data after start_date {start_date}")
+            
             # Generate signals
             technical_signals = self.trading_strategy.generate_signals(df)
             ml_predictions = self.ml_predictor.predict(df)
