@@ -1,12 +1,8 @@
 import logging
 import os
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram import __version__ as TG_VER
 from telegram import Update
-import pandas as pd
-import numpy as np
-#from data_handler import DataHandler #removed
-#from trading_strategy import TradingStrategy #removed
-#from ml_predictor import MLPredictor #removed
+from telegram.ext import Application, CommandHandler, ContextTypes
 
 # Setup logging
 logging.basicConfig(
@@ -36,6 +32,9 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 def main() -> None:
     """Start the bot."""
     try:
+        # Log version info
+        logger.info(f"Using python-telegram-bot version {TG_VER}")
+
         # Get token from environment variable
         token = os.environ.get("TELEGRAM_BOT_TOKEN")
         if not token:
@@ -55,6 +54,7 @@ def main() -> None:
 
     except Exception as e:
         logger.error(f"Error starting bot: {str(e)}")
+        raise  # Re-raise the exception for proper error handling
 
 if __name__ == "__main__":
     main()

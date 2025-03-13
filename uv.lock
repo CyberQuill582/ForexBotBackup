@@ -984,8 +984,14 @@ wheels = [
 ]
 
 [package.optional-dependencies]
+callback-data = [
+    { name = "cachetools" },
+]
 job-queue = [
     { name = "apscheduler" },
+]
+webhooks = [
+    { name = "tornado" },
 ]
 
 [[package]]
@@ -1021,7 +1027,7 @@ dependencies = [
     { name = "openai" },
     { name = "pandas" },
     { name = "plotly" },
-    { name = "python-telegram-bot", extra = ["job-queue"] },
+    { name = "python-telegram-bot", extra = ["callback-data", "job-queue", "webhooks"] },
     { name = "requests" },
     { name = "scikit-learn" },
     { name = "seaborn" },
@@ -1037,7 +1043,7 @@ requires-dist = [
     { name = "openai", specifier = ">=1.65.5" },
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "plotly", specifier = ">=6.0.0" },
-    { name = "python-telegram-bot", extras = ["job-queue"], specifier = ">=20.0" },
+    { name = "python-telegram-bot", extras = ["callback-data", "job-queue", "webhooks"], specifier = ">=20.0" },
     { name = "requests", specifier = ">=2.32.3" },
     { name = "scikit-learn", specifier = ">=1.6.1" },
     { name = "seaborn", specifier = ">=0.13.2" },
