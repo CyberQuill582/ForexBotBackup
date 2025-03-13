@@ -749,7 +749,8 @@ with tabs[3]:  # Market Analysis
         col1, col2, col3 = st.columns(3)
 
         with col1:
-            st.write("Daily Timeframe")            daily_signals = trading_strategy.generate_signals(tf_data["1d"])
+            st.write("Daily Timeframe")
+            daily_signals = trading_strategy.generate_signals(tf_data["1d"])
             daily_trend = "Bullish" if tf_data["1d"]['SMA_20'].iloc[-1] > tf_data["1d"]['SMA_50'].iloc[-1] else "Bearish"
             daily_rsi = tf_data["1d"]['RSI'].iloc[-1]
 
