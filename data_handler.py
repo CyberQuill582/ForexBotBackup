@@ -64,6 +64,10 @@ class DataHandler:
             
             if df.empty:
                 raise ValueError(f"No data received for {symbol}")
+                
+            # Convert index to UTC to avoid timezone comparison issues
+            if df.index.tzinfo is not None:
+                df.index = df.index.tz_convert('UTC')
             
             # Calculate basic technical indicators
             df['SMA_20'] = df['Close'].rolling(window=20).mean()

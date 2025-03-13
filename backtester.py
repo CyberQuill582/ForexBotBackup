@@ -1,4 +1,3 @@
-
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -12,16 +11,17 @@ class Backtester:
         self.logger = logging.getLogger(__name__)
         self.trading_strategy = TradingStrategy()
         self.ml_predictor = MLPredictor()
-        
-    def run_backtest(self, df, initial_capital=10000.0, position_size=0.1):
+
+    def run_backtest(self, df, initial_capital=10000.0, position_size=0.1, start_date = None): #Added start_date parameter
         """
         Run a backtest on historical data
-        
+
         Args:
             df: DataFrame with OHLC data and indicators
             initial_capital: Initial capital amount
             position_size: Size of each position as percentage of capital
-            
+            start_date: Start date for backtest (optional)
+
         Returns:
             Dictionary with backtest results
         """
@@ -30,34 +30,34 @@ class Backtester:
             technical_signals = self.trading_strategy.generate_signals(df)
             ml_predictions = self.ml_predictor.predict(df)
             final_signals = self.trading_strategy.combine_signals(technical_signals, ml_predictions)
-            
+
             # Prepare backtest data
             backtest_data = pd.DataFrame({
                 'Close': df['Close'],
                 'Signal': final_signals
             })
-            
+
             # Calculate returns
             backtest_data['Returns'] = df['Close'].pct_change()
             backtest_data['Strategy_Returns'] = backtest_data['Returns'] * backtest_data['Signal'].shift(1)
-            
+
             # Remove NaN values
             backtest_data = backtest_data.dropna()
-            
+
             # Calculate equity curve
             backtest_data['Cumulative_Returns'] = (1 + backtest_data['Returns']).cumprod()
             backtest_data['Strategy_Cumulative_Returns'] = (1 + backtest_data['Strategy_Returns']).cumprod()
-            
+
             # Calculate equity with initial capital
             backtest_data['Equity'] = initial_capital * backtest_data['Strategy_Cumulative_Returns']
-            
+
             # Calculate position sizes
             backtest_data['Position_Size'] = backtest_data['Equity'] * position_size * backtest_data['Signal']
-            
+
             # Calculate drawdowns
             backtest_data['Peak'] = backtest_data['Equity'].cummax()
             backtest_data['Drawdown'] = (backtest_data['Equity'] / backtest_data['Peak'] - 1) * 100
-            
+
             # Calculate metrics
             metrics = {
                 'total_return': (backtest_data['Equity'].iloc[-1] / initial_capital - 1) * 100,
@@ -72,13 +72,13 @@ class Backtester:
                 'equity_curve': backtest_data[['Equity']],
                 'drawdown_curve': backtest_data[['Drawdown']]
             }
-            
+
             return metrics
-            
+
         except Exception as e:
             self.logger.error(f"Error in backtesting: {str(e)}")
             raise
-    
+
     def plot_equity_curve(self, equity_curve, figsize=(12, 6)):
         """Plot equity curve from backtest results"""
         plt.figure(figsize=figsize)
@@ -88,7 +88,7 @@ class Backtester:
         plt.ylabel('Equity')
         plt.grid(True)
         return plt.gcf()
-    
+
     def plot_drawdown_curve(self, drawdown_curve, figsize=(12, 6)):
         """Plot drawdown curve from backtest results"""
         plt.figure(figsize=figsize)
